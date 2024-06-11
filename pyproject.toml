@@ -1,0 +1,31 @@
+[project]
+name = "dinoAPI"
+version = "0.1.0"
+description = "GroundingDINO API"
+authors = [
+    {name = "DahTach", email = "francesco.tacinelli@gmail.com"},
+]
+dependencies = [
+    "gradio>=4.36.1",
+    "torch>=2.3.1",
+    "torchvision>=0.18.1",
+    "autodistill>=0.1.26",
+    "autodistill-grounding-dino>=0.1.4",
+    "roboflow>=1.1.32",
+    "progressbar>=2.5",
+    "imagesize>=1.4.1",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[project.scripts]
+dinoapi = "dinoapi.main:main"
