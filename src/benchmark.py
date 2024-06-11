@@ -15,10 +15,10 @@ Steps:
 - keep doing this until we find the best aliases
 """
 
+def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id: int, device="cuda"):
 
-def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id: int):
-    class_prs = [bbox for bbox, _ in predictions]
     class_grs = [bbox for idx, bbox in ground_truths if idx == class_id]
+    class_prs = [bbox for bbox, _ in predictions]
 
     true_positives = 0
     false_positives = 0
@@ -29,12 +29,13 @@ def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id:
     if class_grs and class_prs:
         # Convert lists of boxes to tensors
         gr_bbxs = ops.box_convert(
-            boxes=torch.tensor(class_grs),
+            boxes=torch.tensor(class_grs).to(device),
             in_fmt="cxcywh",
             out_fmt="xyxy",
         )
 
         # Find matching pairs (if any) based on IoU
+        # FIX: tensors on the same device
         iou_matrix = ops.box_iou(
             gr_bbxs, torch.Tensor(class_prs)
         )  # Efficient IoU calculation

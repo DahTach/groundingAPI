@@ -6,7 +6,8 @@ import utils
 from typing import List, Dict, Tuple
 from collections import defaultdict
 
-FILE_PATH = "/Users/francescotacinelli/Developer/theia/data/captions.json"
+FILE_PATH = "/home/francesco/dataset/labeled_pallets"
+
 
 
 class Captions:
@@ -124,11 +125,11 @@ class Captions:
 
 class Dataset:
     def __init__(
-        self, path="/Users/francescotacinelli/Developer/datasets/pallets_sorted/test/"
+        self, path="/home/francesco/dataset/labeled_pallets"
     ):
         self.path = path
         self.captions_path = (
-            "/Users/francescotacinelli/Developer/theia/data/captions.json"
+            "/home/francesco/dataset/labeled_pallets/captions.json"
         )
         self.images: List[str]
         self.ground_truths: Dict[int, List[Tuple]]

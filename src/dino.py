@@ -21,7 +21,7 @@ from autodistill.helpers import load_image
 from autodistill_grounding_dino.helpers import combine_detections, load_grounding_dino
 from dataset import Captions
 
-TEST_FILE_PATH = "/Users/francescotacinelli/Developer/theia/data/captions.json"
+TEST_FILE_PATH = "/home/francesco/dataset/labeled_pallets/captions.json"
 captions = Captions(TEST_FILE_PATH)
 
 # import argparse
@@ -132,7 +132,7 @@ class Dino:
     def gradio_predict(
         self, image, alias, box_threshold=0.1, text_threshold=0.25
     ) -> List[Tuple]:
-        image = cv.imread(image)
+        # image = cv.imread(image)
         source_h, source_w, _ = image.shape
 
         boxes, prompt = self.model.fast_predict_with_prompt(
@@ -148,7 +148,7 @@ class Dino:
         if isinstance(prompt, list):
             prompt = "".join(prompt)
 
-        boxes = boxes * torch.Tensor([source_w, source_h, source_w, source_h])
+        boxes = boxes * torch.Tensor([source_w, source_h, source_w, source_h]).to(torch.device("cuda"))
 
         boxes = box_convert(
             boxes=torch.tensor(boxes),
@@ -282,7 +282,7 @@ class Dino:
         keep_indices = torchvision.ops.nms(
             boxes=boxes,
             iou_threshold=iou_threshold,
-            scores=torch.Tensor([1] * len(boxes)),
+            scores=torch.Tensor([1] * len(boxes)).to(self.device),
         )
 
         # Remove boxes that are bigger than average by size deviation threshold
@@ -520,12 +520,12 @@ class DinoModel(Model):
         self.device = device
 
     def load_model(
-        self, model_config_path: str, model_checkpoint_path: str, device: str = "cpu"
+        self, model_config_path: str, model_checkpoint_path: str, device: str = "cuda"
     ):
         args = SLConfig.fromfile(model_config_path)
         args.device = device
         model = build_model(args)
-        checkpoint = torch.load(model_checkpoint_path, map_location="cpu")
+        checkpoint = torch.load(model_checkpoint_path, map_location="cuda")
         model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
         model.eval()
         return model
@@ -615,7 +615,7 @@ class DinoModel(Model):
         caption: str,
         box_threshold: float,
         text_threshold: float,
-        device: str = "cpu",
+        device: str = "cuda",
     ) -> List[torch.Tensor]:
         caption = self.preprocess_caption(caption=caption)
 
