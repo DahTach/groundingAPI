@@ -6,6 +6,7 @@ import torchvision.utils as torchutils
 import torchvision.io as io
 import cv2 as cv
 import imagesize
+import utils
 
 """
 Steps:
@@ -14,19 +15,21 @@ Steps:
 - use the benchmarking results to determine the best aliases
 - keep doing this until we find the best aliases
 """
+device = utils.get_device()
 
-def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id: int, device="cuda"):
 
-    class_grs = [bbox for idx, bbox in ground_truths if idx == class_id]
-    class_prs = [bbox for bbox, _ in predictions]
-
+def get_confMatr(class_prs, class_grs):
+    class_prs = torch.Tensor(class_prs).to(device)
+    class_grs = torch.Tensor(class_grs).to(device)
     true_positives = 0
     false_positives = 0
     false_negatives = 0
 
-    print("class_prs", class_prs, "class_grs", class_grs)
+    print(f"Number of predictions after: {class_prs}")
 
-    if class_grs and class_prs:
+    # check if list of tensors are empty since Boolean value of Tensor with more than one value is ambiguous
+    if class_grs.numel() != 0 and class_prs.numel() != 0:
+        print("both class_grs and class_prs are not empty")
         # Convert lists of boxes to tensors
         gr_bbxs = ops.box_convert(
             boxes=torch.tensor(class_grs).to(device),
@@ -35,9 +38,8 @@ def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id:
         )
 
         # Find matching pairs (if any) based on IoU
-        # FIX: tensors on the same device
         iou_matrix = ops.box_iou(
-            gr_bbxs, torch.Tensor(class_prs)
+            gr_bbxs.to(device), torch.Tensor(class_prs).to(device)
         )  # Efficient IoU calculation
         matched_indices = torch.where(
             iou_matrix >= 0.5
@@ -48,10 +50,12 @@ def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id:
         false_positives = len(class_prs) - true_positives
 
         false_negatives = len(class_grs) - true_positives
-    elif not class_prs:
-        false_negatives = 1
-    elif not class_grs:
-        false_positives = 1
+    elif class_prs.numel() == 0:
+        print("class_prs is empty")
+        false_negatives = len(class_grs)
+    elif class_grs.numel() == 0:
+        print("class_grs is empty")
+        false_positives = len(class_prs)
 
     return true_positives, false_positives, false_negatives
 

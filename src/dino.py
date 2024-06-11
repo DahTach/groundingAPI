@@ -19,10 +19,9 @@ import utils
 import supervision as sv
 from autodistill.helpers import load_image
 from autodistill_grounding_dino.helpers import combine_detections, load_grounding_dino
-from dataset import Captions
+from dataset import Captions, CAPTIONS_FILE_PATH
 
-TEST_FILE_PATH = "/home/francesco/dataset/labeled_pallets/captions.json"
-captions = Captions(TEST_FILE_PATH)
+captions = Captions(CAPTIONS_FILE_PATH)
 
 # import argparse
 # parser = argparse.ArgumentParser()
@@ -41,8 +40,8 @@ captions = Captions(TEST_FILE_PATH)
 
 
 class Dino:
-    def __init__(self, ontology, device=None, box_threshold=0.35, text_threshold=0.25):
-        self.device = self.get_device() if not device else device
+    def __init__(self, ontology, box_threshold=0.35, text_threshold=0.25):
+        self.device = utils.get_device()
         self.ontology = ontology
         self.box_threshold = box_threshold
         self.text_threshold = text_threshold
@@ -52,24 +51,12 @@ class Dino:
         self.checkpoint = os.path.join(self.cache, "groundingdino_swint_ogc.pth")
         self.load()
 
-    def get_device(self):
-        if torch.cuda.is_available():
-            print("using cuda")
-            return "cuda"
-        if torch.backends.mps.is_available() and torch.backends.mps.is_built():
-            print("using cpu because mps is not fully supported yet")
-            return "cpu"
-        else:
-            print("using cpu")
-            return "cpu"
-
     def load(self):
         try:
             print("trying to load grounding dino directly")
             self.model = DinoModel(
                 model_config_path=self.config,
                 model_checkpoint_path=self.checkpoint,
-                device=self.device,
             )
         except Exception as e:
             print(f"Occured error: {e}")
@@ -88,7 +75,6 @@ class Dino:
             self.model = DinoModel(
                 model_config_path=self.config,
                 model_checkpoint_path=self.checkpoint,
-                device=self.device,
             )
 
     def preprocess_image(self, image_bgr: np.ndarray) -> torch.Tensor:
@@ -148,7 +134,9 @@ class Dino:
         if isinstance(prompt, list):
             prompt = "".join(prompt)
 
-        boxes = boxes * torch.Tensor([source_w, source_h, source_w, source_h]).to(torch.device("cuda"))
+        boxes = boxes * torch.Tensor([source_w, source_h, source_w, source_h]).to(
+            self.device
+        )
 
         boxes = box_convert(
             boxes=torch.tensor(boxes),
@@ -161,6 +149,7 @@ class Dino:
         predictions: List[Tuple] = [
             ([int(coord) for coord in box], prompt) for box in boxes
         ]
+        print(f"Number of predictions: {len(predictions)}")
 
         return predictions
 
@@ -509,23 +498,17 @@ class Dino:
 
 
 class DinoModel(Model):
-    def __init__(
-        self, model_config_path: str, model_checkpoint_path: str, device: str = "cuda"
-    ):
+    def __init__(self, model_config_path: str, model_checkpoint_path: str):
+        self.device = utils.get_device()
         self.model = self.load_model(
             model_config_path=model_config_path,
             model_checkpoint_path=model_checkpoint_path,
-            device=device,
-        ).to(device)
-        self.device = device
+        ).to(self.device)
 
-    def load_model(
-        self, model_config_path: str, model_checkpoint_path: str, device: str = "cuda"
-    ):
+    def load_model(self, model_config_path: str, model_checkpoint_path: str):
         args = SLConfig.fromfile(model_config_path)
-        args.device = device
         model = build_model(args)
-        checkpoint = torch.load(model_checkpoint_path, map_location="cuda")
+        checkpoint = torch.load(model_checkpoint_path, map_location=self.device)
         model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
         model.eval()
         return model
@@ -569,7 +552,6 @@ class DinoModel(Model):
             caption=prompt,
             box_threshold=box_threshold,
             text_threshold=text_threshold,
-            device=self.device,
         )
 
         # class_id = captions.get_class_from_alias(prompt)
@@ -615,12 +597,11 @@ class DinoModel(Model):
         caption: str,
         box_threshold: float,
         text_threshold: float,
-        device: str = "cuda",
     ) -> List[torch.Tensor]:
         caption = self.preprocess_caption(caption=caption)
 
-        model = model.to(device)
-        image = image.to(device)
+        model = model.to(self.device)
+        image = image.to(self.device)
 
         with torch.no_grad():
             outputs = model(image[None], captions=[caption])
@@ -637,12 +618,11 @@ class DinoModel(Model):
         caption: str,
         box_threshold: float,
         text_threshold: float,
-        device: str = "cpu",
     ) -> Tuple[torch.Tensor, torch.Tensor, List[str]]:
         caption = self.preprocess_caption(caption=caption)
 
-        model = model.to(device)
-        image = image.to(device)
+        model = model.to(self.device)
+        image = image.to(self.device)
 
         with torch.no_grad():
             outputs = model(image[None], captions=[caption])
