@@ -2,7 +2,7 @@ from interface import demo
 
 
 def main():
-    demo.launch()
+    demo.launch(share=True)
 
 
 if __name__ == "__main__":

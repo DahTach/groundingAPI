@@ -54,5 +54,7 @@ with gr.Blocks() as demo:
         label="Output",
     )
     metrics = gr.Label(label="Metrics")
-    pred_btn.click(predict, inputs=[input, label], outputs=[output, metrics])
+    pred_btn.click(
+        predict, inputs=[input, label], outputs=[output, metrics], api_name="predict"
+    )
     grounds.upload(get_grounds, inputs=[grounds])

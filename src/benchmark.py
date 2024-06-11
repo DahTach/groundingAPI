@@ -34,10 +34,10 @@ def get_confMatr(predictions: List[Tuple], ground_truths: List[Tuple], class_id:
             out_fmt="xyxy",
         )
 
-        # pr_bbxs = torch.stack(class_prs, dim=0)
-
         # Find matching pairs (if any) based on IoU
-        iou_matrix = ops.box_iou(gr_bbxs, pr_bbxs)  # Efficient IoU calculation
+        iou_matrix = ops.box_iou(
+            gr_bbxs, torch.Tensor(class_prs)
+        )  # Efficient IoU calculation
         matched_indices = torch.where(
             iou_matrix >= 0.5
         )  # Assuming IoU threshold of 0.5
