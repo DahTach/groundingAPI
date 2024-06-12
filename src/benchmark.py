@@ -19,13 +19,11 @@ device = utils.get_device()
 
 
 def get_confMatr(class_prs, class_grs):
-    class_prs = torch.Tensor(class_prs).to(device)
+    class_prs = class_prs.to(device)
     class_grs = torch.Tensor(class_grs).to(device)
     true_positives = 0
     false_positives = 0
     false_negatives = 0
-
-    print(f"Number of predictions after: {class_prs}")
 
     # check if list of tensors are empty since Boolean value of Tensor with more than one value is ambiguous
     if class_grs.numel() != 0 and class_prs.numel() != 0:

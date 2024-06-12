@@ -115,6 +115,56 @@ class Dino:
 
         return predictions
 
+    def gradio_multi_predict(
+        self, image, aliases, box_threshold=0.1, text_threshold=0.25
+    ):
+        # image = cv.imread(image)
+        source_h, source_w, _ = image.shape
+
+        multi_boxes = torch.Tensor()
+        prompts = ""
+
+        for alias in aliases:
+            boxes, prompt = self.model.fast_predict_with_prompt(
+                image=image,
+                prompt=alias,
+                box_threshold=box_threshold,
+                text_threshold=text_threshold,
+            )
+
+            boxes = boxes * torch.Tensor([source_w, source_h, source_w, source_h]).to(
+                self.device
+            )
+
+            boxes = box_convert(
+                boxes=torch.tensor(boxes),
+                in_fmt="cxcywh",
+                out_fmt="xyxy",
+            )
+
+            # stack boxes tensors
+
+            # initialize the multi_boxes tensor
+            if multi_boxes.size(0) == 0:
+                multi_boxes = boxes
+            else:
+                multi_boxes = torch.cat((multi_boxes, boxes), dim=0)
+
+            # remove all whitespaces and points from the prompt
+            prompt = prompt.replace(" ", "").replace(".", "")
+            # if prompt is a list join it to a string
+            if isinstance(prompt, list):
+                prompt = "".join(prompt)
+
+            prompts.join(prompt)
+
+        boxes = self.nms(multi_boxes)
+
+        # predictions: List[Tuple] = [(prompts, box) for box in boxes]
+        predictions = multi_boxes
+
+        return predictions
+
     def gradio_predict(
         self, image, alias, box_threshold=0.1, text_threshold=0.25
     ) -> List[Tuple]:
@@ -149,7 +199,6 @@ class Dino:
         predictions: List[Tuple] = [
             ([int(coord) for coord in box], prompt) for box in boxes
         ]
-        print(f"Number of predictions: {len(predictions)}")
 
         return predictions
 
@@ -263,7 +312,7 @@ class Dino:
     def nms(
         self,
         boxes,
-        iou_threshold=0.5,
+        iou_threshold=0.6,
         containment_threshold=0.8,
         size_deviation_threshold=1.5,
     ):
