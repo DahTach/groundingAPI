@@ -112,7 +112,7 @@ def predict(img: np.ndarray, aliases, ground_truths, class_id):
 
     print(f"metrics: {metrics}")
 
-    return str(pred_dict), str(metrics_dict)
+    return pred_dict, metrics_dict
 
 
 def validate_grounds(ground_str: str) -> str:
