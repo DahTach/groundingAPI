@@ -98,7 +98,7 @@ def predict(img: np.ndarray, aliases, ground_truths, class_id):
     ground_truths = preprocess_grounds(source_w, source_h, ground_truths, class_id)
     pred_dict = {
         "aliases": aliases,
-        "detections": predictions,
+        "detections": predictions.cpu().tolist(),
     }
     true_positives, false_positives, false_negatives = bench.get_confMatr(
         predictions, ground_truths
