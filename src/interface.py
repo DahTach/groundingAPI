@@ -89,11 +89,15 @@ def preprocess_grounds(source_w, source_h, ground_truths, class_id=2):
 #     return (img, predictions), metrics
 
 
-def predict(img: np.ndarray, aliases, ground_truths, class_id):
+def predict(
+    img: np.ndarray, aliases, ground_truths, class_id, box_threshold, text_threshold
+):
     class_id = classes.index(class_id)
     # remove spaces and split by "."
     aliases = aliases.replace(" ", "").split(".")
-    predictions = model.gradio_multi_predict(img, aliases)
+    predictions = model.gradio_multi_predict(
+        img, aliases, box_threshold, text_threshold
+    )
     source_h, source_w, _ = img.shape
     ground_truths = preprocess_grounds(source_w, source_h, ground_truths, class_id)
     pred_dict = {
@@ -132,6 +136,12 @@ with gr.Blocks() as demo:
     grounds = gr.TextArea(
         label="Ground Truths", placeholder="List[Tuple[int, List[float]]]"
     )
+    box_threshold = gr.Slider(
+        label="Box Threshold", minimum=0.1, maximum=1.0, step=0.01, value=0.5
+    )
+    text_threshold = gr.Slider(
+        label="Text Threshold", minimum=0.1, maximum=1.0, step=0.01, value=0.5
+    )
     ground_validation = gr.Textbox(label="GR Validity", interactive=False)
     grounds.input(fn=validate_grounds, inputs=grounds, outputs=ground_validation)
     pred_btn = gr.Button(value="Predict")
@@ -139,7 +149,7 @@ with gr.Blocks() as demo:
     metrics = gr.Code(label="Metrics", language="json")
     pred_btn.click(
         predict,
-        inputs=[input, aliases, grounds, class_id],
+        inputs=[input, aliases, grounds, class_id, box_threshold, text_threshold],
         outputs=[output, metrics],
         api_name="predict",
     )
