@@ -62,7 +62,7 @@ def convert_to_list_of_tuples(string_representation: str):
 
         return result
     except Exception as e:
-        return []
+        return str(e)
 
 
 def preprocess_grounds(source_w, source_h, ground_truths, class_id=2):
