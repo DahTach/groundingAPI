@@ -9,6 +9,7 @@ from ast import (
 )  # For safely evaluating the string representation of the list
 import numpy as np
 import torch
+import json
 
 classes = [
     "bitter pack",
@@ -112,7 +113,7 @@ def predict(img: np.ndarray, aliases, ground_truths, class_id):
 
     print(f"metrics: {metrics}")
 
-    return pred_dict, metrics_dict
+    return json.dumps(pred_dict), json.dumps(metrics_dict)
 
 
 def validate_grounds(ground_str: str) -> str:
